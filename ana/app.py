@@ -1,5 +1,5 @@
 import queue
-import random
+from random import shuffle as shuffle_list
 import logging
 from flask import Flask
 from pathlib import PosixPath
@@ -25,7 +25,7 @@ class PlayerThread(threading.Thread):
     _stop_event: threading.Event
     omxp_process: Popen
 
-    def __init__(self, app, *args, **kwargs):
+    def __init__(self, app: Flask, *args, **kwargs):
         self.app = app
         self._stop_event = threading.Event()
         super().__init__(*args, **kwargs)
@@ -48,14 +48,16 @@ class PlayerThread(threading.Thread):
         return self._stop_event.is_set()
 
 class Player(Flask):
-    history = []
-    queue_pool = []
+    history: list
+    queue_pool: list
     play_thread: PlayerThread
     now_playing: QueueItem
     play_queue: queue.PriorityQueue
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.history = []
+        self.queue_pool = []
         self.play_queue = None
         self.play_thread = None
         self.now_playing = None
@@ -67,7 +69,7 @@ class Player(Flask):
     def new_queue(self, shuffle=True):
         shuf = self.queue_pool.copy()
         if shuffle is True:
-            random.shuffle(shuf)
+            shuffle_list(shuf)
         self.play_queue = queue.PriorityQueue(maxsize=0)
         for item in shuf:
             self.play_queue.put(item)
