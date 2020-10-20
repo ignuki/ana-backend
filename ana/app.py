@@ -3,6 +3,7 @@ import random
 import logging
 from flask import Flask
 from pathlib import PosixPath
+from subprocess import Popen
 
 from dataclasses import dataclass, field
 from typing import Any
@@ -20,8 +21,11 @@ class QueueItem:
 
 # Pass the application context to our threads
 class PlayerThread(threading.Thread):
+    app: Flask
+    _stop_event: threading.Event
+    omxp_process: Popen
+
     def __init__(self, app, *args, **kwargs):
-        self.omxp_pid = None
         self.app = app
         self._stop_event = threading.Event()
         super().__init__(*args, **kwargs)
@@ -30,23 +34,31 @@ class PlayerThread(threading.Thread):
         with self.app.app_context():
             super().run()
 
+    def kill_omxp(self):
+        self.app.logger.warning('Killing PID {}'.format(self.omxp_process.pid))
+        self.omxp_process.kill()
+
     def stop(self):
         if not self.is_alive():
             return
         self._stop_event.set()
+        self.kill_omxp()
 
     def stopped(self):
         return self._stop_event.is_set()
 
 class Player(Flask):
-    queue_pool = []
-    play_thread: PlayerThread = None
-    now_playing: QueueItem = None
-    play_queue: queue.PriorityQueue = None
     history = []
+    queue_pool = []
+    play_thread: PlayerThread
+    now_playing: QueueItem
+    play_queue: queue.PriorityQueue
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.play_queue = None
+        self.play_thread = None
+        self.now_playing = None
         self.config.from_object('ana.default_settings.Config')
 
     def update_pool(self, pool: list):
@@ -62,22 +74,13 @@ class Player(Flask):
 
     def skip(self):
         if self.play_thread is not None:
-            self.logger.warning(
-                'Killing PID {}'.format(self.play_thread.omxp_process.pid)
-            )
-            self.play_thread.omxp_process.kill()
+            self.play_thread.kill_omxp()
 
     def start_queue(self, f):
         if self.play_thread is not None:
             self.play_thread.stop()
-            self.logger.warning(
-                'Killing PID {}'.format(self.play_thread.omxp_process.pid)
-            )
-            self.play_thread.omxp_process.kill()
             self.play_thread.join()
-        self.play_thread = PlayerThread(
-            self, target=f, args=(), daemon=True
-        )
+        self.play_thread = PlayerThread(self, target=f, args=(), daemon=True)
         self.play_thread.start()
 
     def get_now_playing(self):
