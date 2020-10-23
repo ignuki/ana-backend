@@ -28,7 +28,14 @@ def get_queue(q_length: str):
 
 @bp.route('/now_playing', methods=['GET'])
 def now_playing():
-    return jsonify(app.get_now_playing())
+    if app.now_playing == None:
+        res = {}
+    else:
+        res= {
+            'path': str(self.now_playing.item),
+            'filename': self.now_playing.item.name
+        }
+    return jsonify(res)
 
 def validate_posted_path(path: str):
     if not (os.path.isfile(abs_path) or os.path.isdir(abs_path)):
@@ -69,5 +76,17 @@ def new_queue():
 
 @bp.route('/skip', methods=['POST'])
 def skip():
+    app.skip()
+    return jsonify(success=True)
+
+@bp.route('/prev', methods=['POST'])
+def prev():
+    if len(app.history) == 0:
+        return jsonify(success=False)
+    item = app.history.pop().item
+    priority = app.queue_get_first_priority()
+    if app.now_playing is not None:
+        app.queue_put(priority, app.now_playing.item)
+    app.queue_put(priority - 1, item)
     app.skip()
     return jsonify(success=True)

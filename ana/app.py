@@ -85,13 +85,12 @@ class Player(Flask):
         self.play_thread = PlayerThread(self, target=f, args=(), daemon=True)
         self.play_thread.start()
 
-    def get_now_playing(self):
-        if self.now_playing == None:
-            return {}
-        return {
-            'path': str(self.now_playing.item),
-            'filename': self.now_playing.item.name
-        }
+    def queue_get_first_priority(self):
+        l = sorted(list(self.play_queue.queue))
+        if len(l) < 1:
+            return float('inf')
+        priority = l[0].priority
+        return 99999 if priority == float('inf') else priority - 1
 
     def queue_put(self, priority: float, item: PosixPath):
         self.play_queue.put(QueueItem(priority, item))
