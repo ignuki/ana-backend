@@ -22,13 +22,12 @@ def play_queue():
         if not os.path.isfile(str(app.now_playing.item)):
             continue
         app.logger.info('Now playing: {}'.format(
-            app.now_playing.item.name
+            str(app.now_playing.item)
         ))
         omxp_cmd = ["omxplayer", "-o", "hdmi", str(app.now_playing.item)]
-        # omxp_cmd = [
-        #     "echo", '{} done'.format(str(app.now_playing.item))
-        # ]
-        thread.omxp_process = subprocess.Popen(omxp_cmd, close_fds=True, stdout=subprocess.DEVNULL)
+        thread.omxp_process = subprocess.Popen(
+            omxp_cmd, close_fds=True, stdout=subprocess.DEVNULL
+        )
         time.sleep(10)
         thread.omxp_process.wait()
         app.history.append(app.now_playing)
