@@ -28,7 +28,7 @@ def play_queue():
         # omxp_cmd = [
         #     "echo", '{} done'.format(str(app.now_playing.item))
         # ]
-        thread.omxp_process = subprocess.Popen(omxp_cmd, close_fds=True, stdout=devnull)
+        thread.omxp_process = subprocess.Popen(omxp_cmd, close_fds=True, stdout=subprocess.DEVNULL)
         time.sleep(10)
         thread.omxp_process.wait()
         app.history.append(app.now_playing)
