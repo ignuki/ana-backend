@@ -37,4 +37,4 @@ class Config:
    )
 
    PLAYER_MEDIA_DIR = os.getenv('PLAYER_MEDIA_DIR', '/tmp/media')
-   PLAYER_DEFAULT_SUF_DIR = os.getenv('DEFAUL_SHUF_DIRECTORY', 'series')
+   PLAYER_DEFAULT_SHUF_DIR = os.getenv('DEFAUL_SHUF_DIRECTORY', 'series')

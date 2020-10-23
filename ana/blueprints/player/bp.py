@@ -55,8 +55,8 @@ def config(app: Player):
         exit(1)
 
     pool_path = \
-        app.config['PLAYER_MEDIA_DIR'].rstrip('/') + '/' + \
-        app.config['PLAYER_DEFAULT_SUF_DIR']
+        app.config['PLAYER_MEDIA_DIR'].rstrip('/') + os.sep + \
+        app.config['PLAYER_DEFAULT_SHUF_DIR']
 
     if os.path.isdir(pool_path) == False:
         app.logger.error('{} does not exist or it is not a directory'.format(
