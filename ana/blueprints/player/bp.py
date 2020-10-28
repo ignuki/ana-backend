@@ -24,11 +24,12 @@ def play_queue():
         app.logger.info('Now playing: {}'.format(
             str(app.now_playing.item)
         ))
-        omxp_cmd = ["omxplayer", "-o", "hdmi", str(app.now_playing.item)]
+        # omxp_cmd = ["omxplayer", "-o", "hdmi", str(app.now_playing.item)]
+        omxp_cmd = ["sleep", "60"]
         thread.omxp_process = subprocess.Popen(
-            omxp_cmd, close_fds=True, stdout=subprocess.DEVNULL
+            omxp_cmd, close_fds=True, stdout=subprocess.DEVNULL,
+            preexec_fn=os.setsid
         )
-        time.sleep(10)
         thread.omxp_process.wait()
         app.history.append(app.now_playing)
         if app.now_playing.priority == float('inf'):

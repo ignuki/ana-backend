@@ -1,4 +1,5 @@
 import queue
+import os, signal
 from random import shuffle as shuffle_list
 import logging
 from flask import Flask
@@ -36,7 +37,8 @@ class PlayerThread(threading.Thread):
 
     def kill_omxp(self):
         self.app.logger.warning('Killing PID {}'.format(self.omxp_process.pid))
-        self.omxp_process.kill()
+        pgid = os.getpgid(self.omxp_process.pid)
+        os.killpg(pgid, signal.SIGTERM)
 
     def stop(self):
         if not self.is_alive():
