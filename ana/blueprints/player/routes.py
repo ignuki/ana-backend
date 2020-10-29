@@ -4,7 +4,7 @@ from schema import Schema, And, Use, Optional
 from flask import jsonify, request, url_for
 from flask import current_app as app
 
-from ana.blueprints.player.bp import bp, play_queue
+from ana.blueprints.player.bp import bp
 
 @bp.route('/player/test', methods=['GET'])
 def player_test():
@@ -15,7 +15,7 @@ def player_test():
 def get_queue(q_length: str):
     queue_list = sorted(list(app.play_queue.queue))
     res = []
-    for i in range(0, int(q_length)):
+    for i in range(0, min(len(queue_list), int(q_length))):
         res.append(
             {
                 'index': i,
@@ -32,8 +32,8 @@ def now_playing():
         res = {}
     else:
         res= {
-            'path': str(self.now_playing.item),
-            'filename': self.now_playing.item.name
+            'path': str(app.now_playing.item),
+            'filename': app.now_playing.item.name
         }
     return jsonify(res)
 
@@ -70,7 +70,7 @@ def new_queue():
         json['shuffle'] = True
 
     app.new_queue(json['shuffle'])
-    app.start_queue(play_queue)
+    app.start_queue()
 
     return jsonify(success=True)
 

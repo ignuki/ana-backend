@@ -1,15 +1,45 @@
 import queue
+import threading
 import os, signal
 from random import shuffle as shuffle_list
 import logging
 from flask import Flask
+from flask_cors import CORS
 from pathlib import PosixPath
-from subprocess import Popen
+from subprocess import Popen, DEVNULL
 
 from dataclasses import dataclass, field
 from typing import Any
 
-import threading
+from flask import current_app as app
+
+def play_queue():
+    thread = threading.current_thread()
+    app.logger.info('Starting queue...')
+    while True:
+        app.now_playing = app.play_queue.get()
+        if not os.path.isfile(str(app.now_playing.item)):
+            if thread.stopped():
+                break
+            else:
+                continue
+        app.logger.info('Now playing: {}'.format(
+            str(app.now_playing.item)
+        ))
+        # omxp_cmd = ["omxplayer", "-o", "hdmi", str(app.now_playing.item)]
+        omxp_cmd = ["sleep", "60"]
+        thread.omxp_process = Popen(
+            omxp_cmd, close_fds=True, stdout=DEVNULL,
+            preexec_fn=os.setsid
+        )
+        thread.omxp_process.wait()
+        app.history.append(app.now_playing)
+        if app.now_playing.priority == float('inf'):
+            if len(app.history) > app.config['MAX_HISTORY_LEN']:
+                app.history.pop(0)
+        if thread.stopped():
+            break
+    app.logger.info('Exiting player thread')
 
 @dataclass(order=True)
 class QueueItem:
@@ -78,9 +108,16 @@ class Player(Flask):
 
     def skip(self):
         if self.play_thread is not None:
-            self.play_thread.kill_omxp()
+            if len(list(app.play_queue.queue)) == 0:
+                self.play_thread.stop()
+                self.play_thread.kill_omxp()
+                self.play_thread.join()
+                self.new_queue()
+                self.start_queue()
+            else:
+                self.play_thread.kill_omxp()
 
-    def start_queue(self, f):
+    def start_queue(self, f=play_queue):
         if self.play_thread is not None:
             self.play_thread.stop()
             self.play_thread.join()
@@ -103,6 +140,7 @@ from ana.blueprints.player import bp as bp_player
 
 def create_app():
     app = Player(__name__)
+    cors = CORS(app)
 
     logging.basicConfig(level=logging.INFO)
 

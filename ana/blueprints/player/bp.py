@@ -1,11 +1,9 @@
 import os
 import queue
 import threading
-import subprocess
 
 import time # remove
 
-from threading import current_thread
 from pathlib import Path
 from flask import Blueprint
 
@@ -13,32 +11,6 @@ from ana.app import Player
 from flask import current_app as app
 
 bp = Blueprint('player', __name__)
-
-def play_queue():
-    thread = current_thread()
-    app.logger.info('Starting queue...')
-    while True:
-        app.now_playing = app.play_queue.get()
-        if not os.path.isfile(str(app.now_playing.item)):
-            continue
-        app.logger.info('Now playing: {}'.format(
-            str(app.now_playing.item)
-        ))
-        # omxp_cmd = ["omxplayer", "-o", "hdmi", str(app.now_playing.item)]
-        omxp_cmd = ["sleep", "60"]
-        thread.omxp_process = subprocess.Popen(
-            omxp_cmd, close_fds=True, stdout=subprocess.DEVNULL,
-            preexec_fn=os.setsid
-        )
-        thread.omxp_process.wait()
-        app.history.append(app.now_playing)
-        if app.now_playing.priority == float('inf'):
-            if len(app.history) > app.config['MAX_HISTORY_LEN']:
-                app.history.pop(0)
-            app.play_queue.put(app.now_playing)
-        if thread.stopped():
-            break
-    app.logger.info('Exiting player thread')
 
 from ana.blueprints.player import routes
 
@@ -79,4 +51,4 @@ def config(app: Player):
 
     app.update_pool(res)
     app.new_queue()
-    app.start_queue(play_queue)
+    app.start_queue()
